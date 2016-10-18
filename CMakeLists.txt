@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.6)
-project(dart-boxing-prototype)
+project(boxing-tracking)
 subdirs(src)
 
 #===============================================================================

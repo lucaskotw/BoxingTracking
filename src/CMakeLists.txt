@@ -1,4 +1,4 @@
-set(APP_NAME BoxingPrototype)
+set(APP_NAME BoxingTracking)
 file(GLOB ${APP_NAME}_srcs "*.cpp")
 file(GLOB ${APP_NAME}_hdrs "*.h")
 add_executable(${APP_NAME} ${${APP_NAME}_srcs} ${${APP_NAME}_hdrs})

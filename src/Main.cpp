@@ -9,9 +9,6 @@
 #include <cmath> // for atan2
 #include "AsfParser.h"
 
-//#include <GL/glut.h>
-//#include "AmcMotion.h"
-#include "LinearInterpolator.h"
 
 using namespace dart;
 using namespace dynamics;
@@ -21,17 +18,17 @@ using namespace simulation;
 int main(int argc, char ** argv)
 {
 
-  // testing asfparser
+  // testing of reading AsfData
   ASFData* asf_data = new ASFData();
   dart::dynamics::SkeletonPtr robot = dart::dynamics::Skeleton::create("robot");
-  asf_data->readSkeleton(argv[1], robot);
+  robot = readSkeleton(argv[1]);
 
   WorldPtr world(new World);
 
   world->addSkeleton(robot);
   // make sure the world is not intefered with gravity
-  //Eigen::Vector3d zero_g = Eigen::Vector3d::Zero();
-  //world->setGravity(zero_g);
+  Eigen::Vector3d zero_g = Eigen::Vector3d::Zero();
+  world->setGravity(zero_g);
 
 
   // Display the result
