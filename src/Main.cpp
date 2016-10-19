@@ -18,10 +18,20 @@ using namespace simulation;
 int main(int argc, char ** argv)
 {
 
+  // TODO: separate asfData for Main.cpp to read
+  //
   // testing of reading AsfData
-  ASFData* asf_data = new ASFData();
-  dart::dynamics::SkeletonPtr robot = dart::dynamics::Skeleton::create("robot");
-  robot = readSkeleton(argv[1]);
+  ASFData* asfData;
+  dart::dynamics::SkeletonPtr robot = readSkeleton(argv[1], "robot", &asfData);
+  std::vector<std::string> segmentNames;
+/*
+  if (asfData->getSegmentNames(&segmentNames))
+  {
+    dtmsg << "[Main.cpp] segmentNames size = "
+          << segmentNames.size()
+          << std::endl;
+  }
+*/
 
   WorldPtr world(new World);
 
@@ -37,6 +47,50 @@ int main(int argc, char ** argv)
   MyWindow window;
   window.setWorld(world);
   window.setSkel(robot);
+  window.loadMotionData(argv[2], asfData);
+
+
+
+  // testing with the init pose
+  std::vector<std::string> amcSegmentNames = {
+    "root",
+    "lowerback",
+    "upperback",
+    "thorax",
+    "lowerneck",
+    "upperneck",
+    "head",
+    "rclavicle",
+    "rhumerus",
+    "rradius",
+    "rwrist",
+    "rhand",
+    "rfingers",
+    "rthumb",
+    "lclavicle",
+    "lhumerus",
+    "lradius",
+    "lwrist",
+    "lhand",
+    "lfingers",
+    "lthumb",
+    "rfemur",
+    "rtibia",
+    "rfoot",
+    "rtoes",
+    "lfemur",
+    "ltibia",
+    "lfoot",
+    "ltoes"};
+  std::string segmentName;
+  std::cout << amcSegmentNames.size() << std::endl;
+  for (int i=0; i<amcSegmentNames.size(); ++i)
+  {
+    segmentName = amcSegmentNames.at(i);
+    // set init pose
+    window.transformSegmentAtTimeFrame(segmentName, 0);
+  }
+
 
 
   glutInit(&argc, argv);

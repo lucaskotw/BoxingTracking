@@ -22,11 +22,29 @@ void MyWindow::setSkel(dart::dynamics::SkeletonPtr _skel)
   // set initial position
 }
 
-/*
-bool MyWindow::transformSegmentAtSample(std::string segmentName,
-                                        int timeStep)
+
+
+int MyWindow::loadMotionData(char* motionFileName, ASFData * asfData)
 {
 
+    // load corresponding ASF data
+    mAsfData = new ASFData();
+    *mAsfData = *asfData;
+
+//    std::cout << "MyWindow get Asf Data pointer" << std::endl;    
+    // test motion data
+    mInputMotion = new AMCData(asfData);
+
+//    std::cout << mInputMotion->getSegmentNames().size() << std::endl;    
+    mInputMotion->readAMCFile(motionFileName);
+    
+    return 0;
+}
+
+bool MyWindow::transformSegmentAtTimeFrame(std::string segmentName,
+                                           int timeStep)
+{
+  std::cout << segmentName << std::endl;
   Eigen::VectorXd segmentConfig;
   if (mInputMotion->getSegmentConfig(timeStep, segmentName, &segmentConfig))
   {
@@ -43,8 +61,22 @@ bool MyWindow::transformSegmentAtSample(std::string segmentName,
       tf.linear() = dart::math::eulerXYZToMatrix(r_t.tail(3)*deg_to_rad);
       //tf.linear() = dart::math::eulerZYXToMatrix(r_t.tail(3)*deg_to_rad);
       tf.translation() = r_t.head(3)*unit;
+      dtmsg << "[MyWindow::transformSegmentAtTimeFrame]"
+            << " segment name = " << segmentName
+            << " segment configuration = " << segmentConfig
+            << " convert to positions with size = " << dart::dynamics::FreeJoint::convertToPositions(tf).size()
+            << " to joint with #dofs = " << mSkel->getJoint("root_joint")->getNumDofs()
+            << std::endl;
       mSkel->getJoint("root_joint")
            ->setPositions(dart::dynamics::FreeJoint::convertToPositions(tf));
+
+      dtmsg << "[MyWindow::transformSegmentAtTimeFrame]"
+            << " segment name = " << segmentName
+            << " segment configuration = "
+            << mSkel->getJoint("root_joint")->getPositions()
+            << " after setting"
+            << std::endl;
+ 
       return true;
     }
     else
@@ -61,22 +93,23 @@ bool MyWindow::transformSegmentAtSample(std::string segmentName,
         //Eigen::Matrix3d motionRot = dart::math::eulerZYXToMatrix(segmentConfig*deg_to_rad);
         Eigen::Isometry3d finalTF;
         //finalTF.linear() = refFrame.inverse() * motionRot * refFrame;
-        finalTF.linear() = refFrame * motionRot * refFrame.inverse();
+        finalTF.linear() = refFrame.transpose() * motionRot * refFrame;
+        //finalTF.linear() = refFrame * motionRot * refFrame.inverse();
         //finalTF.linear() = motionRot;
 
         // transform
-        mSkel->getBodyNode(segmentName)->getParentBodyNode()->getParentJoint()
+        mSkel->getBodyNode(segmentName)->getParentJoint()
              ->setPositions(dart::dynamics::BallJoint::convertToPositions(finalTF.linear()));
 
 
-        std::cout << segmentName << std::endl;
-        std::cout << mSkel->getBodyNode(segmentName)->getParentJoint()
-            ->getName() << std::endl;
-        std::cout << mSkel->getBodyNode(segmentName)->getRelativeTransform().linear()
-                  << std::endl;
+        //std::cout << segmentName << std::endl;
+        //std::cout << mSkel->getBodyNode(segmentName)->getParentJoint()
+        //    ->getName() << std::endl;
+        //std::cout << mSkel->getBodyNode(segmentName)->getRelativeTransform().linear()
+        //          << std::endl;
 
 
-        std::cout << mSkel->getJoint(segmentName+"_joint")->getPositions() << std::endl;
+        //std::cout << mSkel->getJoint(segmentName+"_joint")->getPositions() << std::endl;
 
         return true;
 
@@ -87,7 +120,6 @@ bool MyWindow::transformSegmentAtSample(std::string segmentName,
   }
   return false;
 }
-*/
 
 void MyWindow::timeStepping()
 {
@@ -95,6 +127,19 @@ void MyWindow::timeStepping()
 
   // Step the simulation forward
   mWorld->step();
+
+  /*
+  std::vector<std::string> segmentNames = mInputMotion->getSegmentNames();
+  std::cout << segmentNames.size() << std::endl;
+  std::cout << segmentNames.at(10) << std::endl;
+  std::string segmentName;
+  for (int i=0; i<segmentNames.size(); ++i)
+  {
+    segmentName = segmentNames.at(i);
+    // set init pose
+    transformSegmentAtTimeFrame(segmentName, 0);
+  }
+  */
 
 
 }

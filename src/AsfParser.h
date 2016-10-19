@@ -1,4 +1,6 @@
-/**
+/*
+ * DART Version: 6.1
+ *
  * The parsing process debunk as follows:
  *   1) read the Root and Segment data
  *   2) read hierachy structure
@@ -96,8 +98,8 @@ private:
 public:
   // constructor, copy constructor and destructor
   ASFData();
-  //ASFData(const ASFData & asfData);
-  //ASFData& operator= (const ASFData & asfData);
+  ASFData(const ASFData & asfData);
+  ASFData& operator= (const ASFData & asfData);
   ~ASFData();
 
 
@@ -119,9 +121,12 @@ public:
   bool getSegmentNames(std::vector<std::string> * segmentNameList);
   
   // load data from reading the ASF file
+  // and dump the information to skeleton kinematic tree
 
 };
 
-dart::dynamics::SkeletonPtr readSkeleton(char * asfFileUri);
+dart::dynamics::SkeletonPtr readSkeleton(char *asfFileUri,
+                                         char *skelName,
+                                         ASFData **asfData);
 
 #endif

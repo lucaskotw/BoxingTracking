@@ -1,5 +1,5 @@
 /*
- * DART Version: 5.1
+ * DART Version: 6.1
  *
  */
 #include "AsfParser.h"
@@ -17,19 +17,19 @@ ASFData::ASFData()
 
 }
 
-//ASFData::ASFData(const ASFData & asfData) : mRoot(asfData.mRoot),
-//                                            mBones(asfData.mBones)
-//{
-//}
+ASFData::ASFData(const ASFData & asfData) : mRoot(asfData.mRoot),
+                                            mSegments(asfData.mSegments)
+{
+}
 
 
-//ASFData& ASFData::operator= (const ASFData & asfData)
-//{
-//  mRoot = asfData.mRoot;
-//  mBones = asfData.mBones;
-//  return *this;
-//
-//}
+ASFData& ASFData::operator= (const ASFData & asfData)
+{
+  mRoot = asfData.mRoot;
+  mSegments = asfData.mSegments;
+  return *this;
+
+}
 
 
 ASFData::~ASFData()
@@ -634,7 +634,8 @@ bool createKinematicTree(ASFData *asfData, dart::dynamics::SkeletonPtr skel)
     for (int i=0; i<segmentNameList.size(); ++i)
     {
       segmentName = segmentNameList.at(i);
-      if (asfData->getSegmentParentName(segmentName, &parentName))
+      if (segmentName != "root"
+          && asfData->getSegmentParentName(segmentName, &parentName))
       {
         if (!attachSegment(skel, segmentName, parentName))
         {
@@ -810,24 +811,50 @@ bool createShapeNode(ASFData *asfData, dart::dynamics::SkeletonPtr skel)
 
 
 
-dart::dynamics::SkeletonPtr readSkeleton(char * asfFileUri)
+dart::dynamics::SkeletonPtr readSkeleton(char *asfFileUri,
+                                         char *skelName,
+                                         ASFData **asfData)
 {
 
-  dart::dynamics::SkeletonPtr skel = dart::dynamics::Skeleton::create("skeleton");
+  dart::dynamics::SkeletonPtr skel = dart::dynamics::Skeleton::create(skelName);
 
 
   // TODO: put asfData outside
-  ASFData* asfData = new ASFData();
-  if (!asfData->readAsfData(asfFileUri))
+  *asfData = new ASFData();
+  std::vector<std::string> segmentNames;
+  if (!(*asfData)->getSegmentNames(&segmentNames))
+  {
+    dtwarn << "[readSkeleton]: init new asfData, error in getting segmentNames"
+           << std::endl;
+  }
+  else
+  {
+    dtmsg << "[readSkeleton]: init new segmentNames size = "
+          << segmentNames.size()
+          << std::endl;
+  }
+
+  if (!(*asfData)->readAsfData(asfFileUri))
   {
     dtwarn << "[readSkeleton]: Unable to read ASF Data, return null skeleton"
            << std::endl;
     return nullptr;
   }
 
+  if (!(*asfData)->getSegmentNames(&segmentNames))
+  {
+    dtwarn << "[readSkeleton]: after read asfData, error in getting segmentNames"
+           << std::endl;
+  }
+  else
+  {
+    dtmsg << "[readSkeleton]: after read asfData, segmentNames size = "
+          << segmentNames.size()
+          << std::endl;
+  }
 
 
-  if (!createKinematicTree(asfData, skel))
+  if (!createKinematicTree(*asfData, skel))
   {
     dtwarn << "[readSkeleton]: Unable to create kinematic tree based on data, "
            << "return nullptr."
@@ -840,7 +867,7 @@ dart::dynamics::SkeletonPtr readSkeleton(char * asfFileUri)
   std::cout << skel->getNumBodyNodes() << " BodyNodes" << std::endl;
 
 
-  modifyKinematicTree(asfData, skel);
+  modifyKinematicTree(*asfData, skel);
 
   // testing modified kinematic tree
   //std::cout << skel->getJoint("lfingers_joint")->getTreeIndex()
@@ -848,7 +875,7 @@ dart::dynamics::SkeletonPtr readSkeleton(char * asfFileUri)
 
 
 
-  createShapeNode(asfData, skel);
+  createShapeNode(*asfData, skel);
   // test createShapeNode position
   std::cout << "lfinger's bodynode frame world coord" << std::endl;
   std::cout << skel->getBodyNode("lfingers")->getTransform().translation()
