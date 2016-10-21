@@ -298,7 +298,7 @@ int AMCData::readAMCFile(char * fileName)
       ++mNumFrames;
       frameConfig.resize(0);
       // only read the first pose
-      if (mNumFrames >= 1) break;
+      //if (mNumFrames >= 1) break;
     }
   }
   // push back last frame's configuration

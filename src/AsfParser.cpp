@@ -658,30 +658,58 @@ bool createKinematicTree(ASFData *asfData, dart::dynamics::SkeletonPtr skel)
 bool modifyKinematicTree(ASFData *asfData, dart::dynamics::SkeletonPtr skel)
 {
   double unit = (1.0/0.45)*2.54/100.0; // scale to inches to meter
+  const double deg_to_rad = M_PI/180.0;
 
   std::vector<std::string> segmentNameList;
   std::string segmentName = "";
   std::string parentName = "";
+  Eigen::Vector3d parentAxes;
+  Eigen::Vector3d segmentAxes;
   dart::dynamics::JointPtr j_segment = nullptr;
-  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tf;
   if (asfData->getSegmentNames(&segmentNameList))
   {
     for (int i=0; i<segmentNameList.size(); ++i)
     {
+      tf = Eigen::Isometry3d::Identity();
       segmentName = segmentNameList.at(i);
       if (asfData->getSegmentParentName(segmentName, &parentName))
       {
         if (parentName != "root")
         {
+          asfData->getSegmentAxes(parentName, &parentAxes);
+          asfData->getSegmentAxes(segmentName, &segmentAxes);
           j_segment = skel->getJoint(segmentName+"_joint");
+          /*
+          tf.linear() = 
+              dart::math::eulerZYXToMatrix(parentAxes*deg_to_rad).transpose()
+              * dart::math::eulerZYXToMatrix(segmentAxes*deg_to_rad);
+          */
           tf.translation() = asfData->getSegmentDirection(parentName)
                              * unit
                              * asfData->getSegmentLength(parentName);
-          std::cout << tf.translation() << std::endl;
           j_segment->setTransformFromParentBodyNode(tf);
+          // show the relative transform from current segment to parent
+          dtmsg << "[modifyKinematicTree] " << segmentName
+                << "\n-> axes in euler angle\n"
+                << segmentAxes
+                << "\n-> parent axes\n"
+                << parentAxes
+                << "\n-> segment rotation\n"
+                << dart::math::eulerZYXToMatrix(segmentAxes*deg_to_rad)
+                << "\n-> parent axes rotation\n"
+                << dart::math::eulerZYXToMatrix(parentAxes*deg_to_rad)
+                << "\n-> after: relative rotation transform\n"
+                << j_segment->getTransformFromParentBodyNode().linear()
+                << "\n-> after: relative translation transform\n"
+                << j_segment->getTransformFromParentBodyNode().translation()
+                << std::endl;
+ 
         }
       }
+
     }
+
   }
 
 
@@ -713,7 +741,6 @@ bool createShapeNode(ASFData *asfData, dart::dynamics::SkeletonPtr skel)
   Eigen::Isometry3d tf;
   if (asfData->getSegmentNames(&segmentNameList))
   {
-    std::cout << segmentNameList.size() << std::endl;
     for (int i=0; i<segmentNameList.size(); ++i)
     {
       segmentName = segmentNameList.at(i);
@@ -766,7 +793,6 @@ bool createShapeNode(ASFData *asfData, dart::dynamics::SkeletonPtr skel)
             new EllipsoidShape(sqrt(2)*Eigen::Vector3d(j_rad, j_rad, j_rad))
         );
 
-        std::cout << segmentName << std::endl;
         j_sn = skel->getBodyNode(segmentName)
                    ->createShapeNodeWith<dart::dynamics::VisualAspect,
                                          dart::dynamics::CollisionAspect,
@@ -774,7 +800,6 @@ bool createShapeNode(ASFData *asfData, dart::dynamics::SkeletonPtr skel)
                         (j_shape, segmentName+"_joint_shape");
         j_sn->getVisualAspect()->setColor(dart::Color::Blue());
 
-        std::cout << j_sn->getRelativeTranslation() << std::endl;
         // create segment's segment bodynode shape 
         tf = Eigen::Isometry3d::Identity();
         tf.linear() = dart::math::computeRotation(

@@ -31,7 +31,7 @@ public:
 private:
   ASFData * mAsfData;
   AMCData* mInputMotion;
-  int mTimeStepCnt;
+  int mTimeStepCnt = 0;
   dart::dynamics::SkeletonPtr mSkel;
 
 
